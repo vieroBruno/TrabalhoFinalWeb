@@ -6,10 +6,10 @@ class DataBaseConnection {
     private static function start(): void{
 
         if(!isset(self::$host)){
-            self::$host = 'temquemudar';
-            self::$db = 'temquemudar';
-            self::$user = 'temquemudar';
-            self::$pw = 'temquemudar';
+            self::$host = '127.0.0.1';
+            self::$db = 'ponto_venda';
+            self::$user = 'postgres';
+            self::$pw = '123456';
         }
 
     }
@@ -18,7 +18,7 @@ class DataBaseConnection {
         self::start();
 
         try { 
-            $myPDO = new PDO('pgsql:host=' . self::$host . ';dbname=' . self::$db, self::$user,self::$pw);
+            $myPDO = new PDO('pgsql:host=' . self::$host . ';port=5433;dbname=' . self::$db, self::$user,self::$pw);
             $myPDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             return $myPDO;
