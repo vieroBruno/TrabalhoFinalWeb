@@ -40,7 +40,8 @@ class ProductsStore {
                                             ((ODI.TAX/100 * ODI.PRICE) * ODI.AMOUNT) AS TAX_ROW,
                                             (ODI.AMOUNT * ODI.PRICE) AS TOTAL_ROW,
                                             OD.TOTAL AS TOTAL,
-                                            OD.TAX AS TAX_TOTAL
+                                            OD.TAX AS TAX_TOTAL,
+                                            OD.CODE AS ORDER_CODE
                                     FROM ORDER_ITEM ODI
                                     LEFT JOIN ORDERS AS OD ON OD.CODE = ODI.ORDER_CODE
                                     LEFT JOIN PRODUCTS AS P ON ODI.PRODUCT_CODE = P.CODE

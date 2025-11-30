@@ -110,10 +110,26 @@ class Store {
             if($count != 0){
                 echo json_encode(['order_code' => $order_code  ]);
 
-                //se já existir uma ordem de compra, apenas insere os valores passados pelos inputs
+                try {
+                    $stmtOrder = self::$myPDO->query('SELECT CODE FROM ORDERS WHERE STATUS = 1 LIMIT 1');
+                    $activeOrderCode = $stmtOrder->fetchColumn();
+                    
+                    if ($activeOrderCode) {
+                        $order_code = $activeOrderCode;
+                    }
+                } catch(PDOException $e) {
+                    echo json_encode(['error' => $e->getMessage()]);
+                }
+
                 try{
-                        $stmt = self::$myPDO->prepare('INSERT INTO ORDER_ITEM (ORDER_CODE,PRODUCT_CODE,AMOUNT,PRICE,TAX) 
-                                            VALUES(:order_code,:product_code,:amount,:price,:tax)');
+                        $stmt = self::$myPDO->prepare('
+                        INSERT INTO ORDER_ITEM 
+                        (ORDER_CODE, 
+                         PRODUCT_CODE,
+                         AMOUNT,
+                         PRICE,
+                         TAX) 
+                        VALUES(:order_code,:product_code,:amount,:price,:tax)');
                     $stmt->bindParam(':order_code',$order_code);
                     $stmt->bindParam(':product_code',$product_code);
                     $stmt->bindParam(':amount',$amount);
@@ -157,7 +173,7 @@ class Store {
                 $stmt->bindParam(':product_code', $product_code);
                 $stmt->execute();
                 echo json_encode(['success' => true]);
-            }catch(PDOException $e) {
+        } catch (PDOException $e) {
                 echo json_encode(['error' => $e->getMessage()]);
             }             
     }

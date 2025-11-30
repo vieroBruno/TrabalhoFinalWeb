@@ -1,33 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAPI } from '../api';
+import { LiaTrashSolid, LiaEditSolid } from "react-icons/lia";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [historyItems, setHistoryItems] = useState([]);
   
-  // Estado para controlar qual produto está sendo editado (null = criando novo)
   const [editingCode, setEditingCode] = useState(null);
-  
   const [form, setForm] = useState({ name: '', amount: '', price: '', category_code: '' });
 
   useEffect(() => {
-    loadProducts();
-    loadCategories();
+    loadData();
   }, []);
 
-  const loadProducts = async () => {
-    const data = await fetchAPI('apiProducts.php');
-    setProducts(Array.isArray(data) ? data : []);
+  const loadData = async () => {
+    const prodData = await fetchAPI('apiProducts.php');
+    setProducts(Array.isArray(prodData) ? prodData : []);
+
+    const catData = await fetchAPI('apiCategory.php');
+    setCategories(Array.isArray(catData) ? catData : []);
+
+    const histData = await fetchAPI('apiHistoryProducts.php');
+    setHistoryItems(Array.isArray(histData) ? histData : []);
   };
 
-  const loadCategories = async () => {
-    const data = await fetchAPI('apiCategory.php');
-    setCategories(Array.isArray(data) ? data : []);
-  };
+  function validateString(string) {
+    if (!string || string.trim() === "") {
+      alert("Nome não pode ser vazio!");
+      return 0;
+    } else if (string.length > 100) {
+      alert("Limite de caracteres (100) excedido!");
+      return 0;
+    }
+    return 1;
+  }
+
+  function validateNumber(number) {
+    if (number.length > 9) {
+      alert("Valor máximo excedido!");
+      return 0;
+    } else if (number === "" || number < 0 || isNaN(number)) {
+      alert("Valor inválido");
+      return 0;
+    }
+    return 1;
+  }
+
+  function checkChar(e) {
+    const char = String.fromCharCode(e.keyCode);
+    const pattern = "[a-zA-Z0-9- ]";
+    if (char.match(pattern) || e.keyCode === 8 || e.keyCode === 9) {
+      return true;
+    } else {
+      e.preventDefault();
+    }
+  }
+
+  function verifyProductByName(name) {
+    const found = products.find(el => el.name.toLowerCase() === name.toLowerCase());
+    return found ? found.code : 0;
+  }
+
+  function verifyHistory(code) {
+    const inHistory = historyItems.some(h => h.code == code);
+    if (inHistory) {
+      alert("Erro ao excluir: produto existente no histórico de vendas!");
+      return 1;
+    }
+    return 0;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!validateString(form.name)) return;
+    if (!validateNumber(form.amount)) return;
+    if (!validateNumber(form.price)) return;
+    if (!form.category_code) { alert("Selecione uma categoria!"); return; }
+
     if (editingCode) {
         await fetchAPI('apiProducts.php?shouldUpdate=1', 'PUT', { 
             ...form, 
@@ -36,18 +87,32 @@ export default function Products() {
         alert("Produto atualizado com sucesso!");
         setEditingCode(null);
     } else {
-        await fetchAPI('apiProducts.php', 'POST', form);
-        alert("Produto cadastrado com sucesso!");
+        const existingCode = verifyProductByName(form.name.trim());
+        
+        if (existingCode !== 0) {
+            await fetchAPI('apiProducts.php?shouldUpdateAmount=1', 'PUT', {
+                product_code: existingCode,
+                amount: form.amount
+            });
+            alert("Produto já existente, quantia adicionada com sucesso!");
+        } else {
+            await fetchAPI('apiProducts.php', 'POST', form);
+            alert("Produto cadastrado com sucesso!");
+        }
     }
 
     setForm({ name: '', amount: '', price: '', category_code: '' });
-    loadProducts();
+    loadData();
   };
 
   const handleDelete = async (code) => {
     if(!window.confirm("Excluir produto?")) return;
+
+    if (verifyHistory(code) === 1) return;
+
     await fetchAPI('apiProducts.php', 'DELETE', { code });
-    loadProducts();
+    alert("Produto deletado com sucesso!");
+    loadData();
   };
 
   const handleUpdate = (code) => {
@@ -75,6 +140,7 @@ export default function Products() {
         <input placeholder="Nome" 
             value={form.name}
             onChange={e => setForm({...form, name: e.target.value})} 
+            onKeyDown={checkChar}
             required 
         />
         <input type="number" 
@@ -125,9 +191,13 @@ export default function Products() {
               <td>{p.amount}</td>
               <td>R$ {p.price}</td>
               <td>{p.category_name}</td>
-              <td style={{ display: 'flex', gap:'10px'}}>
-                <button className="danger" onClick={() => handleDelete(p.code)}>Excluir</button>
-                <button className="edit" onClick={() => handleUpdate(p.code)}>Editar</button>
+              <td className='actions-cell'>
+                <button className="action-btn delete-btn" onClick={() => handleDelete(p.code)}>
+                    <LiaTrashSolid size={24}/>
+                </button>
+                <button className="action-btn edit-btn" onClick={() => handleUpdate(p.code)}>
+                    <LiaEditSolid size={24}/>
+                </button>
               </td>
             </tr>
           ))}
