@@ -90,11 +90,7 @@ export default function Products() {
         const existingCode = verifyProductByName(form.name.trim());
         
         if (existingCode !== 0) {
-            await fetchAPI('apiProducts.php?shouldUpdateAmount=1', 'PUT', {
-                product_code: existingCode,
-                amount: form.amount
-            });
-            alert("Produto já existente, quantia adicionada com sucesso!");
+            alert("Produto já cadastrado com esse nome!");
         } else {
             await fetchAPI('apiProducts.php', 'POST', form);
             alert("Produto cadastrado com sucesso!");

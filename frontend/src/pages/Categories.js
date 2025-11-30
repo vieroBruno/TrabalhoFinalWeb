@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAPI } from '../api';
-import { LiaTrashSolid } from "react-icons/lia";
+import { LiaTrashSolid, LiaEditSolid } from "react-icons/lia";
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  
+  const [editingCode, setEditingCode] = useState(null);
   const [form, setForm] = useState({ name: '', tax: '' });
 
   useEffect(() => {
@@ -53,7 +55,8 @@ export default function Categories() {
   }
 
   function verifyCategory(name) {
-    const exists = categories.some((el) => el.name.toLowerCase() === name.toLowerCase());
+
+    const exists = categories.some((el) => el.name.toLowerCase() === name.toLowerCase() && el.code !== editingCode);
     if (exists) {
       alert("Categoria já cadastrada");
       return 1;
@@ -73,10 +76,31 @@ export default function Categories() {
     if (validateNumber(form.tax) === 0) return;
     if (verifyCategory(form.name.trim()) === 1) return;
 
-    await fetchAPI('apiCategory.php', 'POST', form);
-    alert("Categoria cadastrada com sucesso!");
+    if (editingCode) {
+        await fetchAPI('apiCategory.php', 'PUT', { 
+            code: editingCode,
+            name: form.name,
+            tax: form.tax
+        });
+        alert("Categoria atualizada com sucesso!");
+        setEditingCode(null);
+    } else {
+        await fetchAPI('apiCategory.php', 'POST', form);
+        alert("Categoria cadastrada com sucesso!");
+    }
+
     setForm({ name: '', tax: '' });
     loadData();
+  };
+
+  const handleUpdate = (cat) => {
+      setForm({ name: cat.name, tax: cat.tax });
+      setEditingCode(cat.code);
+  };
+
+  const cancelEdit = () => {
+      setEditingCode(null);
+      setForm({ name: '', tax: '' });
   };
 
   const handleDelete = async (code) => {
@@ -109,7 +133,16 @@ export default function Categories() {
           onChange={e => setForm({...form, tax: e.target.value})} 
           required 
         />
-        <button type="submit">Cadastrar</button>
+        
+        <button type="submit" className={editingCode ? "success" : ""}>
+            {editingCode ? "Salvar Alterações" : "Cadastrar"}
+        </button>
+        
+        {editingCode && (
+            <button type="button" className="danger" onClick={cancelEdit} style={{marginLeft: '10px'}}>
+                Cancelar
+            </button>
+        )}
       </form>
 
       <table>
@@ -121,19 +154,17 @@ export default function Categories() {
         <tbody>
           {categories.map(cat => (
             <tr key={cat.code}>
-                <td>{cat.code}</td>
-                <td>{cat.name}</td>
-                <td>{cat.tax}</td>
-                <td>
-                    <button className="action-btn delete-btn" onClick={() => handleDelete(cat.code)}>
-                        <LiaTrashSolid size={24}/>
-                    </button>
-                    <button className='action-btn edit-btn'
-                        onClick={() => handleEdit(cat.code)}
-                    >
-                        <LiaEditSolid size={24}/>
-                    </button>
-                  </td>
+              <td>{cat.code}</td>
+              <td>{cat.name}</td>
+              <td>{cat.tax}</td>
+              <td className="actions-cell">
+                <button className="action-btn edit-btn" title="Editar" onClick={() => handleUpdate(cat)}>
+                    <LiaEditSolid size={24} />
+                </button>
+                <button className="action-btn delete-btn" title="Excluir" onClick={() => handleDelete(cat.code)}>
+                    <LiaTrashSolid size={24} />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

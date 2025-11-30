@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAPI } from '../api';
-import { LiaTrashSolid } from "react-icons/lia";
+import { LiaTrashSolid, LiaEditSolid } from "react-icons/lia";
 
 export default function Home() {
   const [availableProducts, setAvailableProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
+  
   const [selectedProduct, setSelectedProduct] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(null);
+  
+  const [editingProductCode, setEditingProductCode] = useState(null);
+  const [originalQuantity, setOriginalQuantity] = useState(null);
+
   const [totals, setTotals] = useState({ tax: 0, total: 0, orderCode: null });
 
   useEffect(() => {
@@ -16,8 +21,14 @@ export default function Home() {
   const loadData = async () => {
     const products = await fetchAPI('apiProductsAvailable.php');
     setAvailableProducts(Array.isArray(products) ? products : []);
-    
     await loadCart();
+  };
+
+  const formatCurrency = (value) => {
+      return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+      }).format(parseFloat(value) || 0);
   };
 
   const loadCart = async () => {
@@ -36,7 +47,7 @@ export default function Home() {
   };
 
   function validateNumber(number) {
-    if (number > 1000000) { // Limite arbitrário de segurança
+    if (number > 1000000) { 
         alert("Valor máximo excedido!");
         return 0;
     } else if (number === "" || number < 0 || isNaN(number) || number == 0) {
@@ -47,14 +58,19 @@ export default function Home() {
   }
 
   function verifyStock(code, requestedAmount) {
+ 
     const product = availableProducts.find(p => p.code == code);
+    
     if (product) {
+        let stockCheckAmount = requestedAmount; 
+        
         const stock = parseFloat(product.amount);
-        if (stock < requestedAmount) {
+        
+        if (stock < stockCheckAmount) {
             alert("Quantidade não disponível no estoque! \nDisponível: " + stock);
-            return 0; // Inválido
+            return 0;
         }
-        return 1; // Válido
+        return 1;
     }
     return 0;
   }
@@ -63,48 +79,89 @@ export default function Home() {
     const existingItem = cartItems.find(item => item.product_code == productCode);
     return existingItem ? existingItem.code : 0;
   }
-  // ------------------
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
     
     if (!validateNumber(quantity)) return;
     if (!selectedProduct) { alert("Selecione um produto!"); return; }
-    if (verifyStock(selectedProduct, quantity) === 0) return;
 
     const product = availableProducts.find(p => p.code == selectedProduct);
     
-    // Verifica se já existe no carrinho
-    const itemInCart = verifyStore(product.code);
+    if (editingProductCode) {
+        const diff = parseFloat(quantity) - parseFloat(originalQuantity);
 
-    const payload = {
-      order_code: totals.orderCode || 0,
-      product_code: product.code,
-      amount: quantity,
-      price: product.price,
-      tax: product.tax
-    };
+        if (diff === 0) {
+            cancelEdit();
+            return;
+        }
 
-    if (itemInCart !== 0) {
+        if (diff > 0) {
+             if (verifyStock(selectedProduct, diff) === 0) return;
+        }
+
+        const payload = {
+            order_code: totals.orderCode,
+            product_code: product.code,
+            amount: diff,
+            price: product.price,
+            tax: product.tax
+        };
+
         await fetchAPI('apiStore.php', 'PUT', payload);
-        
         await fetchAPI('apiSumOrder.php', 'PUT', payload);
-        
-        alert("Produto já existente, quantia adicionada com sucesso!");
-    } else {
-        await fetchAPI('apiStore.php', 'POST', payload);
-        alert("Produto adicionado com sucesso!");
-    }
-    
-    await fetchAPI('apiProductsAvailable.php', 'PUT', { product_code: product.code, amount: quantity });
+        await fetchAPI('apiProductsAvailable.php', 'PUT', { product_code: product.code, amount: diff });
 
-    setSelectedProduct('');
-    setQuantity(1);
-    loadData(); 
+        alert("Quantidade atualizada com sucesso!");
+        cancelEdit();
+
+    } else {
+        if (verifyStock(selectedProduct, quantity) === 0) return;
+
+        const itemInCart = verifyStore(product.code);
+        const payload = {
+            order_code: totals.orderCode || 0,
+            product_code: product.code,
+            amount: quantity,
+            price: product.price,
+            tax: product.tax
+        };
+
+        if (itemInCart !== 0) {
+            await fetchAPI('apiStore.php', 'PUT', payload);
+            await fetchAPI('apiSumOrder.php', 'PUT', payload);
+            alert("Produto já existente, quantia adicionada com sucesso!");
+        } else {
+            await fetchAPI('apiStore.php', 'POST', payload);
+            alert("Produto adicionado com sucesso!");
+        }
+        await fetchAPI('apiProductsAvailable.php', 'PUT', { product_code: product.code, amount: quantity });
+        
+        setSelectedProduct('');
+        setQuantity(null);
+    }
+
+    loadData();
+  };
+
+  const handleUpdate = (item) => {
+      setSelectedProduct(item.product_code);
+      setQuantity(item.amount);
+      setEditingProductCode(item.product_code);
+      setOriginalQuantity(item.amount);
+  };
+
+  const cancelEdit = () => {
+      setEditingProductCode(null);
+      setOriginalQuantity(null);
+      setSelectedProduct('');
+      setQuantity(null);
   };
 
   const handleRemoveItem = async (item) => {
     if(!window.confirm("Deseja remover este item?")) return;
+
+    if (editingProductCode === item.product_code) cancelEdit();
 
     await fetchAPI('apiProductsStore.php', 'DELETE', { 
       code: item.code, 
@@ -125,7 +182,6 @@ export default function Home() {
         alert("Nenhum produto no carrinho!");
         return;
     }
-    
     const openOrder = await fetchAPI('apiStore.php');
     if (openOrder && openOrder[0]) {
        await fetchAPI('apiProductsStore.php', 'PUT', { order_code: openOrder[0].code });
@@ -144,11 +200,9 @@ export default function Home() {
               amount: item.amount
           });
       }
-
       if (totals.orderCode) {
           await fetchAPI('apiDeleteStore.php', 'DELETE', { order_code: totals.orderCode });
       }
-      
       alert("Compra cancelada!");
       loadData();
   };
@@ -158,41 +212,66 @@ export default function Home() {
       <h2>Ponto de Venda</h2>
       
       <form onSubmit={handleAddToCart} className="form-group">
-        <select value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} required>
+        <select 
+            value={selectedProduct} 
+            onChange={e => setSelectedProduct(e.target.value)} 
+            required
+            disabled={!!editingProductCode} 
+            style={{backgroundColor: editingProductCode ? '#e9ecef' : 'white'}}
+        >
           <option value="">Selecione um Produto</option>
           {availableProducts.map(p => (
             <option key={p.code} value={p.code}>
-              {p.name} (R$ {p.price}) - Est: {p.amount}
+              {p.name} ({formatCurrency(p.price)}) - Est: {p.amount}
             </option>
           ))}
+
+          {editingProductCode && !availableProducts.find(p=>p.code == editingProductCode) && (
+              <option value={editingProductCode}>Produto Selecionado</option>
+          )}
         </select>
+        
         <input 
-          type="number" min="1" 
+          type="number"
           value={quantity} onChange={e => setQuantity(e.target.value)} 
           style={{flex: '0 0 100px'}}
+          placeholder='Quantidade'
         />
-        <button type="submit" className="success">Adicionar</button>
+        
+        <button type="submit" className={editingProductCode ? "success" : "success"}>
+            {editingProductCode ? "Salvar Alteração" : "Adicionar"}
+        </button>
+        
+        {editingProductCode && (
+            <button type="button" className="danger" onClick={cancelEdit} style={{marginLeft:'10px'}}>Cancelar</button>
+        )}
       </form>
 
       <table>
         <thead>
           <tr>
-            <th>Produto</th><th>Qtd</th><th>Unitário</th><th>Imposto</th><th>Subtotal</th><th>Ação</th>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Unitário</th>
+            <th>Subtotal</th>
+            <th>Ação</th>
           </tr>
         </thead>
         <tbody>
           {cartItems.map(item => (
             <tr key={item.code}>
-                <td>{item.name}</td>
-                <td>{item.amount}</td>
-                <td>R$ {item.price}</td>
-                <td>R$ {parseFloat(item.tax_row)}</td>
-                <td>R$ {item.total_row}</td>
-                <td>
-                    <button className="action-btn delete-btn" onClick={() => handleRemoveItem(item)}>
-                        <LiaTrashSolid size={24}/>
-                    </button>
-                </td>
+              <td>{item.name}</td>
+              <td>{item.amount}</td>
+              <td>{formatCurrency(item.price)}</td>
+              <td>{formatCurrency(item.total_row)}</td>
+              <td className="actions-cell">
+                <button className="action-btn edit-btn" title="Editar Quantidade" onClick={() => handleUpdate(item)}>
+                    <LiaEditSolid size={24} />
+                </button>
+                <button className="action-btn delete-btn" title="Remover" onClick={() => handleRemoveItem(item)}>
+                    <LiaTrashSolid size={24} />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
