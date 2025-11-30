@@ -1,0 +1,16 @@
+.btn {
+    background-color:  #27005D;
+    color: #fff;
+    padding:  0.7em 1.2em;
+    text-decoration: none;
+    transition:  .5s;
+    cursor: pointer;
+    border: none;
+    border-radius: 0.5em;
+    width: 100%;
+}
+
+.btn:hover{
+    color: #3e443fad;
+}
+

@@ -24,28 +24,38 @@ class Products {
             return self::insertProducts();
         } elseif ($method === 'DELETE') {
             return self::deleteProduct();
-        } elseif ($method === 'PUT'){
+        } elseif ($method === 'PUT' && isset($_REQUEST['shouldUpdate'])) {
             return self::updateProduct();
+        } else if ($method === 'PUT' && isset($_REQUEST['shouldUpdateAmount'])) {
+            return self::updateAmountOfProduct();
         }
 
     }
 
     public static function getProducts(){
+        $query = "SELECT 	
+            P.CODE,
+            P.NAME,
+            AMOUNT,
+            PRICE,
+            C.NAME AS CATEGORY_NAME,
+            CATEGORY_CODE
+        FROM PRODUCTS AS P
+        LEFT JOIN CATEGORIES AS C ON P.CATEGORY_CODE = C.CODE";
 
-        try{
-            $stmt = self::$myPDO->query("SELECT 	
-                                        P.CODE,
-                                        P.NAME,
-                                        AMOUNT,
-                                        PRICE,
-                                        C.NAME AS CATEGORY_NAME,
-                                        CATEGORY_CODE
-                                    FROM PRODUCTS AS P
-                                    LEFT JOIN CATEGORIES AS C ON P.CATEGORY_CODE = C.CODE
-                                    ORDER BY P.CODE ASC");
+        if ( isset($_REQUEST['cdProduct']) ) {
+            $code = $_REQUEST['cdProduct'];
+            $where = " WHERE P.CODE = " . intval($code);
+            $query .= $where;
+        }
+
+        $query .= " ORDER BY P.CODE ASC";
+
+        try {
+            $stmt = self::$myPDO->query($query);
             $products = $stmt->fetchAll(PDO::FETCH_ASSOC);    
             return json_encode($products);            
-        }catch(PDOException $e){
+        } catch (PDOException $e) {
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
@@ -91,7 +101,7 @@ class Products {
         }
     }
 
-    public static function updateProduct(){
+    public static function updateAmountOfProduct(){
         $data = json_decode(file_get_contents('php://input'), true);
 
         $product_code = $data['product_code'];
@@ -104,6 +114,35 @@ class Products {
             $stmt->execute();
             echo json_encode( ['success' => true]);
         } catch(PDOException $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public static function updateProduct(){
+        $data = json_decode(file_get_contents('php://input'),true);
+
+        $code = $data['product_code'];
+        $name = $data['name'];
+        $amount = $data['amount'];
+        $price = $data['price'];
+        $category_code = $data['category_code'];
+
+        try{
+            $stmt = self::$myPDO->prepare('UPDATE PRODUCTS 
+                                    SET NAME = :name,
+                                        AMOUNT = :amount,
+                                        PRICE = :price,
+                                        CATEGORY_CODE = :category_code
+                                    WHERE CODE = :code');
+            $stmt->bindParam(':name',$name);
+            $stmt->bindParam(':amount',$amount);
+            $stmt->bindParam(':price',$price);
+            $stmt->bindParam(':category_code',$category_code);
+            $stmt->bindParam(':code',$code);
+            $stmt->execute();
+            echo json_encode(['code' => $code , 'name' => $name , 'amount' => $amount , 'price' => $price , 'category_code' =>$category_code]);
+
+        }catch(PDOException $e){
             echo json_encode(['error' => $e->getMessage()]);
         }
     }

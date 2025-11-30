@@ -1,10 +1,10 @@
 <?php
 
 require_once('config.php');
+
 header(header:'Access-Control-Allow-Origin: *');
 header(header:'Access-Control-Allow-Headers: *');
 header(header:'Access-Control-Allow-Methods: *');
-
 
 class Categories {
 
@@ -24,6 +24,8 @@ class Categories {
             return self::insertCategories();
         } elseif ($method === 'DELETE') {
             return self::deleteCategory();
+        } elseif ($method === 'PUT'){
+            return self::updateCategory();
         }
 
     }
@@ -71,6 +73,26 @@ class Categories {
         } catch(PDOException $e){
             echo json_encode(['error' => $e->getMessage()]);       
 
+        }
+    }
+
+    public static function updateCategory(){
+        $data = json_decode(file_get_contents('php://input'),true);
+
+        $code = $data['code'];
+        $name = $data['name'];
+        $tax = $data['tax'];
+
+        try{
+            $stmt = self::$myPDO->prepare('UPDATE CATEGORIES SET NAME = :name, TAX = :tax WHERE CODE = :code');
+            $stmt->bindParam(':name',$name);
+            $stmt->bindParam(':tax',$tax);
+            $stmt->bindParam(':code',$code);
+            $stmt->execute();
+            echo json_encode(['code' => $code , 'name' => $name , 'tax' => $tax]);
+
+        }catch(PDOException $e){
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
 

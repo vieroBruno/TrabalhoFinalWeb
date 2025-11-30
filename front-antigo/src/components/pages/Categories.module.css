@@ -1,0 +1,24 @@
+.categories_container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 3em;
+    display: flex;
+}
+
+.categories_container h1 {
+    margin-bottom:  0.5em;
+}
+
+.first_column {
+    width: 50%;
+    margin-right: 3em;
+    padding-right: 1em;
+    border-right : 1px solid black;
+}
+
+.second_column{
+    width: 50%;
+    overflow-x:auto;
+
+}
+

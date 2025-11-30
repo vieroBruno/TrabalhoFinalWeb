@@ -1,0 +1,51 @@
+.history_container {
+    width: 100%;
+    padding: 10em;
+    padding-top: 3em;
+    padding-bottom: 3em;
+    overflow-x:auto;   
+}
+
+.history_container h1 {
+    margin-bottom:  0.5em;
+}
+
+
+.history_container table{
+    width: 100%;
+    align-content: center;
+    text-align: center;
+    overflow-x:auto;   
+
+}
+
+.history_container table td{
+    padding: 1em;
+}
+.modal_container {
+    position: fixed;
+    top: 25%;
+    left: 25%;
+    right: 25%;
+    bottom: 25%;
+    background-color:  #ebebeb;
+    border-radius: 20px; 
+    overflow-x: auto;
+ 
+}
+
+.modal_container table{
+    overflow-x: auto;
+    width: 90%;
+    align-content: end;
+    margin: 3em;
+}
+.modal_container table th{
+    background-color: #67AE6E;
+}
+
+.modal_container table tr{
+    background-color: white;
+}
+
+

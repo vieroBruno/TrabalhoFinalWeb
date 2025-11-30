@@ -1,0 +1,47 @@
+.home_container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 3em;
+    display: flex;
+}
+
+.home_container h1 {
+    margin-bottom:  0.5em;
+}
+
+
+.first_column {
+    width: 50%;
+    margin-right: 3em;
+    padding-right: 1em;
+    border-right : 1px solid black;
+}
+
+.second_column{
+    overflow-x:auto;
+    width: 50%;
+}
+
+.final_input{
+    margin-top: 2em;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+}
+.final_input input{
+   width: 90%;
+}
+.final_button{
+    margin-top: 5%;
+    width: 90%;
+}
+.final_button button{
+    width: 40%;
+    float: right;
+    margin-top: 1em;
+    margin-left: 1%;
+    text-align: center;
+
+}
+
