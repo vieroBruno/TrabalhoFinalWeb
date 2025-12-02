@@ -155,7 +155,7 @@ export default function Home() {
       setEditingProductCode(null);
       setOriginalQuantity(null);
       setSelectedProduct('');
-      setQuantity(null);
+      setQuantity('');
   };
 
   const handleRemoveItem = async (item) => {
@@ -209,7 +209,7 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h2>Ponto de Venda</h2>
+      <h2>Selecione um produto</h2>
       
       <form onSubmit={handleAddToCart} className="form-group">
         <select 
@@ -226,9 +226,11 @@ export default function Home() {
             </option>
           ))}
 
-          {editingProductCode && !availableProducts.find(p=>p.code == editingProductCode) && (
-              <option value={editingProductCode}>Produto Selecionado</option>
-          )}
+          {editingProductCode && !availableProducts.find(p => p.code == editingProductCode) && (
+                <option value={editingProductCode}>
+                    {cartItems.find(item => item.product_code == editingProductCode)?.name} (Indisponível no Estoque)
+                </option>
+            )}
         </select>
         
         <input 
@@ -246,6 +248,8 @@ export default function Home() {
             <button type="button" className="danger" onClick={cancelEdit} style={{marginLeft:'10px'}}>Cancelar</button>
         )}
       </form>
+
+      <h2>Carrinho</h2>
 
       <table>
         <thead>

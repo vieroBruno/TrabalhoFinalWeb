@@ -31,7 +31,7 @@ class ProductsStore {
     public static function getProductsStore(){
        
         try{
-            $stmt = self::$myPDO->query('  SELECT P.NAME,
+            $stmt = self::$myPDO->query('SELECT P.NAME,
                                             ODI.CODE,
                                             PRODUCT_CODE,
                                             ODI.AMOUNT,
