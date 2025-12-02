@@ -263,6 +263,7 @@ export default function Home() {
             <th>Produto</th>
             <th>Quantidade</th>
             <th>Unitário</th>
+            <th>Imposto</th>
             <th>Subtotal</th>
             <th>Ação</th>
           </tr>
@@ -273,6 +274,7 @@ export default function Home() {
               <td>{item.name}</td>
               <td>{item.amount}</td>
               <td>{formatCurrency(item.price)}</td>
+              <td>{formatCurrency(item.tax_row)}</td>
               <td>{formatCurrency(item.total_row)}</td>
               <td className="actions-cell">
                 <button className="action-btn edit-btn" title="Editar Quantidade" onClick={() => handleUpdate(item)}>
@@ -288,6 +290,7 @@ export default function Home() {
       </table>
 
       <div className="totals">
+        <span className="final">Total Imposto: R$ {formatCurrency(totals.tax)}</span>
         <span className="final-total">Total Venda: R$ {formatCurrency(totals.total)}</span>
         <div style={{marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
            <button className="danger" onClick={handleCancelOrder} disabled={cartItems.length === 0}>
