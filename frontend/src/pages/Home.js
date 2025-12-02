@@ -82,22 +82,31 @@ export default function Home() {
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
-    
     if (!validateNumber(quantity)) return;
     if (!selectedProduct) { alert("Selecione um produto!"); return; }
 
-    const product = availableProducts.find(p => p.code == selectedProduct);
+    let product = availableProducts.find(p => p.code == selectedProduct);
+    
+    if (!product) {
+        const cartItem = cartItems.find(item => item.product_code == selectedProduct);
+        if (cartItem) {
+            product = {
+                code: cartItem.product_code,
+                name: cartItem.name,
+                price: cartItem.price,
+                tax: cartItem.tax,
+                amount: 0
+            };
+        }
+    }
+
     
     if (editingProductCode) {
         const diff = parseFloat(quantity) - parseFloat(originalQuantity);
-
-        if (diff === 0) {
-            cancelEdit();
-            return;
-        }
-
-        if (diff > 0) {
-             if (verifyStock(selectedProduct, diff) === 0) return;
+        
+        if (diff === 0) { cancelEdit(); return; } 
+        if (diff > 0) { 
+            if (verifyStock(selectedProduct, diff) === 0) return; 
         }
 
         const payload = {
@@ -112,7 +121,7 @@ export default function Home() {
         await fetchAPI('apiSumOrder.php', 'PUT', payload);
         await fetchAPI('apiProductsAvailable.php', 'PUT', { product_code: product.code, amount: diff });
 
-        alert("Quantidade atualizada com sucesso!");
+        alert("Quantidade atualizada!");
         cancelEdit();
 
     } else {
@@ -130,17 +139,14 @@ export default function Home() {
         if (itemInCart !== 0) {
             await fetchAPI('apiStore.php', 'PUT', payload);
             await fetchAPI('apiSumOrder.php', 'PUT', payload);
-            alert("Produto já existente, quantia adicionada com sucesso!");
         } else {
             await fetchAPI('apiStore.php', 'POST', payload);
-            alert("Produto adicionado com sucesso!");
         }
         await fetchAPI('apiProductsAvailable.php', 'PUT', { product_code: product.code, amount: quantity });
         
         setSelectedProduct('');
-        setQuantity(null);
+        setQuantity(1);
     }
-
     loadData();
   };
 
@@ -282,8 +288,7 @@ export default function Home() {
       </table>
 
       <div className="totals">
-        <span>Imposto Total: R$ {parseFloat(totals.tax).toFixed(2)}</span>
-        <span className="final-total">Total Venda: R$ {parseFloat(totals.total).toFixed(2)}</span>
+        <span className="final-total">Total Venda: R$ {formatCurrency(totals.total)}</span>
         <div style={{marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
            <button className="danger" onClick={handleCancelOrder} disabled={cartItems.length === 0}>
              Cancelar

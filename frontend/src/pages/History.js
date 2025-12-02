@@ -7,6 +7,13 @@ export default function History() {
   const [selectedSale, setSelectedSale] = useState(null);
   const [modalData, setModalData] = useState([]);
 
+  const formatCurrency = (value) => {
+      return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+      }).format(parseFloat(value) || 0);
+  };
+
   useEffect(() => {
     const loadHistory = async () => {
       const data = await fetchAPI('apiHistory.php');
@@ -41,8 +48,8 @@ export default function History() {
           {history.map(h => (
             <tr key={h.order_code}>
                 <td>{h.order_code}</td>
-                <td>R$ {h.tax}</td>
-                <td>R$ {h.total}</td>
+                <td>{formatCurrency(h.tax)}</td>
+                <td>{formatCurrency(h.total)}</td>
                 <td className='actions-cell'>
                     <button className="action-btn view-btn" onClick={() => handleViewDetails(h.order_code)}>
                         <PiEyeLight size={24}/>
@@ -62,15 +69,18 @@ export default function History() {
             <div style={{maxHeight: '300px', overflowY: 'auto'}}>
                 <table>
                 <thead>
-                    <tr><th>Item</th><th>Produto</th><th>Total</th><th>Imposto</th></tr>
+                    <tr><th>Item</th>
+                        <th>Produto</th>
+                        <th>Total</th>
+                        <th>Imposto</th></tr>
                 </thead>
                 <tbody>
                     {modalData.map((item, idx) => (
                     <tr key={idx}>
                         <td>{idx + 1}</td>
                         <td>{item.p_name}</td>
-                        <td>R$ {item.total}</td>
-                        <td>R$ {item.tax}</td>
+                        <td>{formatCurrency(item.total)}</td>
+                        <td>{formatCurrency(item.tax)}</td>
                     </tr>
                     ))}
                 </tbody>
@@ -80,16 +90,16 @@ export default function History() {
             <div className="order-summary">
                 <div className="summary-row">
                     <span>Subtotal:</span>
-                    <span>R$ {subtotal.toFixed(2)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="summary-row">
                     <span>Imposto:</span>
-                    <span>R$ {taxTotal.toFixed(2)}</span>
+                    <span>{formatCurrency(taxTotal)}</span>
                 </div>
                 <div className="summary-divider"></div>
                 <div className="summary-row total">
                     <span>Total:</span>
-                    <span>R$ {finalTotal.toFixed(2)}</span>
+                    <span>{formatCurrency(finalTotal)}</span>
                 </div>
             </div>
 
